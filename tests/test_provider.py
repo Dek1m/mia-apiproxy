@@ -1,0 +1,77 @@
+"""Tests for ApiProxyProvider — call, whitelist, list_api."""
+from __future__ import annotations
+
+import pytest
+
+from apiproxy.provider import ApiProxyProvider
+from apiproxy.config import ApiproxyConfig
+from apiproxy.registry import MethodRegistry
+from modules.auth.provider import UserContext
+
+
+@pytest.fixture
+def provider(fake_module, fake_auth_provider) -> ApiProxyProvider:
+    config = ApiproxyConfig(whitelist=["fake", "auth"])
+    p = ApiProxyProvider(config=config, auth_provider=fake_auth_provider)
+    p.registry.collect_from_module(fake_module, "fake")
+    return p
+
+
+@pytest.mark.asyncio
+class TestProviderCall:
+    async def test_whitelist_ok(self, provider):
+        result = await provider.call(
+            "fake", "typed_method",
+            {"count": 1, "ratio": 1.0, "flag": False},
+        )
+        assert result["error"] is None
+        assert result["data"]["count"] == 1
+
+    async def test_whitelist_reject(self, provider):
+        result = await provider.call("secret_module", "do_thing", {})
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 403
+        assert "not in whitelist" in result["error"]["message"]
+
+    async def test_method_not_found(self, provider):
+        result = await provider.call("fake", "nonexistent", {})
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 404
+
+    async def test_auth_required_no_token(self, provider):
+        result = await provider.call("fake", "get_me", {})
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 401
+
+    async def test_auth_ok(self, provider, fake_auth_provider):
+        user_ctx = UserContext(user_id="u1", username="admin", perms_version=1)
+        fake_auth_provider.register_token("tok", user_ctx)
+        fake_auth_provider.set_permissions("u1", {"users:read"})
+        result = await provider.call("fake", "get_me", {}, token="tok")
+        assert result["error"] is None
+        assert result["data"]["username"] == "admin"
+
+    async def test_auth_no_permission(self, provider, fake_auth_provider):
+        user_ctx = UserContext(user_id="u1", username="admin", perms_version=1)
+        fake_auth_provider.register_token("tok", user_ctx)
+        result = await provider.call("fake", "get_me", {}, token="tok")
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 403
+
+
+class TestProviderListApi:
+    def test_list_api_all(self, provider):
+        methods = provider.list_api()
+        names = [m["name"] for m in methods]
+        assert "login" in names
+        assert "get_me" in names
+
+    def test_list_api_filtered(self, provider):
+        methods = provider.list_api(module_name="fake")
+        names = [m["name"] for m in methods]
+        assert "login" in names
+        assert all(m["module"] == "fake" for m in methods)
+
+    def test_list_api_empty_module(self, provider):
+        methods = provider.list_api(module_name="nonexistent")
+        assert methods == []
