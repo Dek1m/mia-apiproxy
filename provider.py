@@ -11,6 +11,7 @@ from typing import Any
 
 from argenta_logging import get_logger
 
+from core.task_decorator import task
 from .config import ApiproxyConfig
 from .registry import MethodRegistry, MethodMeta
 from .middleware import AuthMiddleware
@@ -47,6 +48,7 @@ class ApiProxyProvider:
         """Доступ к middleware авторизации."""
         return self._middleware
 
+    @task(type="cpu", timeout=30.0)
     async def call(
         self,
         module_name: str,
@@ -88,6 +90,7 @@ class ApiProxyProvider:
             token=token,
         )
 
+    @task(type="cpu", timeout=5.0)
     def list_api(self, module_name: str | None = None) -> list[dict[str, Any]]:
         """Список доступных API-методов.
 
