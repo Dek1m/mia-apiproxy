@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
   "files": {
-    "__init__.py": "57fd6bd426c45f2318bd6065410fc01e8e5d9d98d25b96df56403d254399ff76",
+    "__init__.py": "2629b72f52888b54f1e3611c61abaeadbd9b0dc8c5d9006d535d141de9b21d08",
     "config.py": "b9e311b0b798c1bc5f314821ad8ea978869260117ad51b0ba2022d89853e102b",
     "converter.py": "d2cbe96892bdc50caa21d105a3ce664a9cb6e0fff5962c282a860c7285c69c16",
     "middleware.py": "8e39a77e85e8f66688703fa747580edec2960ab5cbf6ad2ca512d6a684ca6636",
-    "provider.py": "da44e7eb426a7d3e0bf7e2dd44de2f0d3407a3752db1b0d759c01b236e222d1d",
+    "provider.py": "31790f5e757b35354c6ac194dde6c193b80e86da9eb4f014ea8c21e1bebcd62d",
     "registry.py": "ec58807d09245c95a053c6025b78858b36e4077c8b436a83c1cdd3cd0ba26dc4",
     "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "tests/conftest.py": "a87ad5ac04c48169132d381a7f401ad85aaf2bbe219975471aa2eb6f1b5fd206",
@@ -14,5 +14,5 @@
     "tests/test_provider.py": "c82f93a07e66844a533a71e2afd5ded05a5d5223b890ab7bacadb65925fafa6d",
     "tests/test_registry.py": "ba0bb57ebe8e37b0947b6f30143aae5d95341ca7dd67a80d90e7e750bf6c5061"
   },
-  "manifest_hash": "854eb6278033ba97391557f4c3c43e7460a39be9ba8ec280c27bb74ad5827d7c"
+  "manifest_hash": "e95fb9dcc34598c0a994dd553dda32128e58e4db9beb58661376e82acb227954"
 }

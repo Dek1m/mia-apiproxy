@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from modules_system.module_base import ModuleBase
+from modules_system.module_base import ModuleBase, ModuleMeta
 
 # Relative imports с fallback для pytest (когда __init__.py импортируется
 # как standalone модуль без parent package — importlib import mode).
@@ -86,6 +86,12 @@ class ApiProxyModule(ModuleBase):
     @property
     def version(self) -> str:
         return MODULE_VERSION
+
+    @property
+    def meta(self) -> ModuleMeta:
+        return ModuleMeta(
+            timeout_defaults={"call": 30.0, "list_api": 5.0},
+        )
 
     def __init__(self, config: ApiproxyConfig | None = None) -> None:
         self._config = config or ApiproxyConfig.from_env()
