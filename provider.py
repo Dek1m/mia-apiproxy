@@ -9,14 +9,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from argenta_logging import get_logger
+
 
 from .config import ApiproxyConfig
 from .registry import MethodRegistry, MethodMeta
 from .middleware import AuthMiddleware
 from .converter import call_method, ApiError
 
-log = get_logger(__name__)
 
 __all__ = ["ApiProxyProvider"]
 
@@ -31,11 +30,13 @@ class ApiProxyProvider:
         self,
         config: ApiproxyConfig | None = None,
         auth_provider: Any | None = None,
+        log: Any | None = None,
     ) -> None:
         self._config = config or ApiproxyConfig()
         self._registry = MethodRegistry()
         self._middleware = AuthMiddleware(auth_provider=auth_provider)
         self._auth_provider = auth_provider
+        self._log = log
 
     @property
     def registry(self) -> MethodRegistry:
