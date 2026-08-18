@@ -90,6 +90,7 @@ class ApiProxyModule(ModuleBase):
     @property
     def meta(self) -> ModuleMeta:
         return ModuleMeta(
+            dependencies=["log", "auth", "workspace"],
             timeout_defaults={"call": 30.0, "list_api": 5.0},
         )
 
