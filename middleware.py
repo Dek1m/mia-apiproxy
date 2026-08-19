@@ -7,11 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from argenta_logging import get_logger
-
 from .registry import MethodMeta
-
-log = get_logger(__name__)
 
 __all__ = ["AuthMiddleware", "AuthorizedCall"]
 
@@ -37,8 +33,10 @@ class AuthMiddleware:
     def __init__(
         self,
         auth_provider: Any | None = None,
+        log: Any | None = None,
     ) -> None:
         self._auth_provider = auth_provider
+        self._log = log
 
     async def authorize(
         self,
@@ -70,7 +68,8 @@ class AuthMiddleware:
 
         # Нет auth_provider — пропускаем проверку (dev mode)
         if self._auth_provider is None:
-            log.warning("No auth_provider — skipping auth check")
+            if self._log is not None:
+                self._log.warning("No auth_provider — skipping auth check")
             return AuthorizedCall(user_ctx=None, meta=meta)
 
         # Валидация токена

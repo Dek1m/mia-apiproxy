@@ -9,10 +9,6 @@ import inspect
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from argenta_logging import get_logger
-
-log = get_logger(__name__)
-
 __all__ = ["MethodRegistry", "MethodMeta"]
 
 
@@ -39,8 +35,9 @@ class MethodRegistry:
     - Список модулей и методов
     """
 
-    def __init__(self) -> None:
+    def __init__(self, log: Any | None = None) -> None:
         self._methods: dict[str, dict[str, MethodMeta]] = {}
+        self._log = log
 
     def register(
         self,
@@ -113,7 +110,8 @@ class MethodRegistry:
                         self.register(module_name, method_name, meta, attr)
                         count += 1
                     except ValueError as e:
-                        log.warning("skip_duplicate_method", error=str(e))
+                        if self._log is not None:
+                            self._log.warning("skip_duplicate_method", error=str(e))
                 continue
 
             # Свойство — проверяем getter
@@ -125,7 +123,8 @@ class MethodRegistry:
                         self.register(module_name, method_name, meta, attr.fget)
                         count += 1
                     except ValueError as e:
-                        log.warning("skip_duplicate_method", error=str(e))
+                        if self._log is not None:
+                            self._log.warning("skip_duplicate_method", error=str(e))
 
         return count
 

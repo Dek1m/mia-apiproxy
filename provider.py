@@ -33,8 +33,8 @@ class ApiProxyProvider:
         log: Any | None = None,
     ) -> None:
         self._config = config or ApiproxyConfig()
-        self._registry = MethodRegistry()
-        self._middleware = AuthMiddleware(auth_provider=auth_provider)
+        self._registry = MethodRegistry(log=log)
+        self._middleware = AuthMiddleware(auth_provider=auth_provider, log=log)
         self._auth_provider = auth_provider
         self._log = log
 
@@ -87,6 +87,7 @@ class ApiProxyProvider:
             method_name=method_name,
             kwargs=kwargs,
             token=token,
+            log=self._log,
         )
 
     def list_api(self, module_name: str | None = None) -> list[dict[str, Any]]:

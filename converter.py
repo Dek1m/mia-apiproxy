@@ -7,11 +7,7 @@ from __future__ import annotations
 import inspect
 from typing import Any
 
-from argenta_logging import get_logger
-
 from .registry import MethodMeta
-
-log = get_logger(__name__)
 
 __all__ = ["call_method", "ApiError"]
 
@@ -132,6 +128,7 @@ async def call_method(
     method_name: str,
     kwargs: dict[str, Any],
     token: str | None = None,
+    log: Any | None = None,
 ) -> dict[str, Any]:
     """Выполнить API-метод с авторизацией и валидацией.
 
@@ -182,7 +179,8 @@ async def call_method(
         error = ApiError(403, str(e))
         return error.to_dict()
     except Exception as e:
-        log.error("method_call_error", extra={"mod": module_name, "method": method_name, "error": str(e)})
+        if log is not None:
+            log.error("method_call_error", extra={"mod": module_name, "method": method_name, "error": str(e)})
         error = ApiError(500, f"Internal error: {e}")
         return error.to_dict()
 

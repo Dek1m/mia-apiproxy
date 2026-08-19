@@ -59,10 +59,6 @@ __all__ = [
     "call_method",
 ]
 
-from argenta_logging import get_logger
-
-log = get_logger(__name__)
-
 MODULE_VERSION = "1.0.0"
 
 # Whitelist модулей по умолчанию
@@ -97,22 +93,25 @@ class ApiProxyModule(ModuleBase):
     def __init__(self, config: ApiproxyConfig | None = None) -> None:
         self._config = config or ApiproxyConfig.from_env()
         self._provider: ApiProxyProvider | None = None
+        self._log = None
 
     def on_load(self, state: Any) -> None:
         """Инициализация модуля: создание провайдера и сбор методов."""
+        self._log = state.log
+
         # Получаем AuthProvider из DI
         auth_provider = None
         try:
             from modules.auth.provider import AuthProvider
             auth_provider = state.services.resolve(AuthProvider)
         except Exception:
-            log.warning("AuthProvider not found in DI — middleware will skip auth checks")
+            self._log.warning("AuthProvider not found in DI — middleware will skip auth checks")
 
         # Создаём провайдер
         self._provider = ApiProxyProvider(
             config=self._config,
             auth_provider=auth_provider,
-            log=state.log,
+            log=self._log,
         )
 
         # Собираем методы из загруженных модулей
@@ -121,7 +120,7 @@ class ApiProxyModule(ModuleBase):
         # Регистрируем в DI
         state.services.register(ApiProxyProvider, self._provider)
 
-        log.info(
+        self._log.info(
             "apiproxy_module_loaded",
             version=self.version,
             modules=list(self._provider.registry.list_modules()),
@@ -136,22 +135,22 @@ class ApiProxyModule(ModuleBase):
                 # Ищем провайдер модуля в DI
                 provider_class = self._resolve_provider_class(module_name)
                 if provider_class is None:
-                    log.debug(f"Provider class not found for module '{module_name}'")
+                    self._log.debug(f"Provider class not found for module '{module_name}'")
                     continue
 
                 provider = state.services.resolve(provider_class)
                 if provider is None:
-                    log.debug(f"Provider instance not found for module '{module_name}'")
+                    self._log.debug(f"Provider instance not found for module '{module_name}'")
                     continue
 
                 count = registry.collect_from_module(provider, module_name)
-                log.info(
+                self._log.info(
                     "methods_collected",
                     module=module_name,
                     count=count,
                 )
             except Exception as e:
-                log.warning(
+                self._log.warning(
                     "failed_to_collect_methods",
                     module=module_name,
                     error=str(e),
@@ -178,4 +177,5 @@ class ApiProxyModule(ModuleBase):
         """Очистка ресурсов."""
         if self._provider:
             self._provider.registry.clear()
-        log.info("apiproxy_module_unloaded")
+        self._log.info("apiproxy_module_unloaded")
+        self._log = None
