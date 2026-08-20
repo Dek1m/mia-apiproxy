@@ -1,6 +1,6 @@
 # API Proxy Module for Mia Framework
 
-Прослойка между CLI/REST и модулями (auth, workspace, llm).
+Прослойка между CLI и модулями (auth, workspace, llm).
 
 ## Features
 
@@ -12,8 +12,10 @@
 ## Architecture
 
 ```
-CLI/REST → ApiProxyProvider.call() → AuthMiddleware → MethodRegistry → func()
+CLI → ApiProxyProvider.call() → AuthMiddleware → MethodRegistry → func()
 ```
+
+Ядро `Application.api` (`communication/api_proxy.py`) — отдельный фасад, не этот модуль.
 
 ## Installation
 

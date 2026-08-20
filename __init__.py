@@ -1,4 +1,4 @@
-"""API Proxy Module — прослойка между CLI/REST и модулями Mia.
+"""API Proxy Module — прослойка между CLI и модулями Mia.
 
 Собирает методы из модулей (auth, workspace, llm), выполняет авторизацию
 через AuthMiddleware, конвертирует вызовы и возвращает нормализованные ответы.
@@ -68,7 +68,7 @@ _DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm"]
 class ApiProxyModule(ModuleBase):
     """API Proxy модуль для Mia Framework.
 
-    Прослойка между CLI/REST и модулями:
+    Прослойка между CLI и модулями:
     - Сбор метаданных методов из модулей (@auth_method)
     - Авторизация (AuthMiddleware)
     - Конвертация вызовов и нормализация ответов
@@ -135,12 +135,12 @@ class ApiProxyModule(ModuleBase):
                 # Ищем провайдер модуля в DI
                 provider_class = self._resolve_provider_class(module_name)
                 if provider_class is None:
-                    self._log.debug(f"Provider class not found for module '{module_name}'")
+                    self._log.debug("provider_class_not_found", extra={"module": module_name})
                     continue
 
                 provider = state.services.resolve(provider_class)
                 if provider is None:
-                    self._log.debug(f"Provider instance not found for module '{module_name}'")
+                    self._log.debug("provider_instance_not_found", extra={"module": module_name})
                     continue
 
                 count = registry.collect_from_module(provider, module_name)
@@ -162,12 +162,6 @@ class ApiProxyModule(ModuleBase):
         try:
             from modules.auth.provider import AuthProvider
             _MAP["auth"] = AuthProvider
-        except ImportError:
-            pass
-
-        try:
-            from modules.workspace.provider import WorkspaceProvider
-            _MAP["workspace"] = WorkspaceProvider
         except ImportError:
             pass
 
