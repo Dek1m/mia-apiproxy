@@ -235,7 +235,12 @@ def _kwargs_for_func(func: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
         return kwargs
     if any(item.kind == inspect.Parameter.VAR_KEYWORD for item in params.values()):
         return kwargs
-    return {key: value for key, value in kwargs.items() if key in params}
+    # _session_user_id всегда в payload воркера — не режем по сигнатуре обёртки
+    return {
+        key: value
+        for key, value in kwargs.items()
+        if key in params or key == "_session_user_id"
+    }
 
 
 def _from_coded_error(exc: BaseException) -> ApiError | None:
