@@ -10,7 +10,6 @@ from typing import Any
 
 import pytest
 
-from modules.auth.decorators import auth_method
 from modules.auth.provider import UserContext
 
 # ── Динамическая загрузка модуля apiproxy ──────────────
@@ -102,71 +101,72 @@ class FakeAuthProvider:
 
 
 class FakeModule:
-    """Фейковый модуль с @auth_method методами."""
+    """Фейковый модуль с `_api_meta` вручную — converter зовёт in-process, без @task."""
 
-    @auth_method(
-        name="login",
-        description="Вход в систему",
-        args={"username": "str", "password": "str"},
-        return_type="dict",
-        public=True,
-    )
     async def login(self, username: str, password: str) -> dict[str, Any]:
         return {"access_token": "fake-token", "user_id": "user-1"}
 
-    @auth_method(
-        name="get_me",
-        description="Получить данные текущего пользователя",
-        args={},
-        return_type="dict",
-        public=False,
-        required_permission="users:read",
-    )
+    login._api_meta = {
+        "name": "login",
+        "description": "Вход в систему",
+        "args": {"username": "str", "password": "str"},
+        "return_type": "dict",
+        "public": True,
+        "required_permission": None,
+    }
+
     async def get_me(self) -> dict[str, Any]:
         return {"id": "user-1", "username": "admin"}
 
-    @auth_method(
-        name="create_user",
-        description="Создать пользователя",
-        args={"username": "str", "password": "str", "email": "str"},
-        return_type="dict",
-        public=False,
-        required_permission="users:create",
-    )
+    get_me._api_meta = {
+        "name": "get_me",
+        "description": "Получить данные текущего пользователя",
+        "args": {},
+        "return_type": "dict",
+        "public": False,
+        "required_permission": "users:read",
+    }
+
     async def create_user(
         self, username: str, password: str, email: str = "",
     ) -> dict[str, Any]:
         return {"id": "new-user", "username": username}
 
-    @auth_method(
-        name="secret_action",
-        description="Действие с secret полем",
-        args={"token": "str", "api_key": "str"},
-        return_type="str",
-        public=False,
-    )
+    create_user._api_meta = {
+        "name": "create_user",
+        "description": "Создать пользователя",
+        "args": {"username": "str", "password": "str", "email": "str"},
+        "return_type": "dict",
+        "public": False,
+        "required_permission": "users:create",
+    }
+
     async def secret_action(self, token: str, api_key: str) -> str:
         return f"done:{token[:4]}"
 
-    @auth_method(
-        name="typed_method",
-        description="Метод с разными типами",
-        args={"count": "int", "ratio": "float", "flag": "bool"},
-        return_type="dict",
-        public=True,
-    )
+    secret_action._api_meta = {
+        "name": "secret_action",
+        "description": "Действие с secret полем",
+        "args": {"token": "str", "api_key": "str"},
+        "return_type": "str",
+        "public": False,
+        "required_permission": None,
+    }
+
     async def typed_method(
         self, count: int, ratio: float, flag: bool,
     ) -> dict[str, Any]:
         return {"count": count, "ratio": ratio, "flag": flag}
 
-    @auth_method(
-        name="error_method",
-        description="Метод который бросает ошибки",
-        args={"mode": "str"},
-        return_type="str",
-        public=True,
-    )
+    typed_method._api_meta = {
+        "name": "typed_method",
+        "description": "Метод с разными типами",
+        "args": {"count": "int", "ratio": "float", "flag": "bool"},
+        "return_type": "dict",
+        "public": True,
+        "required_permission": None,
+    }
+
     async def error_method(self, mode: str) -> str:
         if mode == "value":
             raise ValueError("bad value")
@@ -175,6 +175,15 @@ class FakeModule:
         if mode == "permission":
             raise PermissionError("no access")
         return "ok"
+
+    error_method._api_meta = {
+        "name": "error_method",
+        "description": "Метод который бросает ошибки",
+        "args": {"mode": "str"},
+        "return_type": "str",
+        "public": True,
+        "required_permission": None,
+    }
 
 
 # ── Фикстуры ────────────────────────────────────────────

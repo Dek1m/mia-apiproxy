@@ -1,6 +1,6 @@
 """MethodRegistry — реестр API-методов модулей.
 
-Собирает метаданные из функций с @auth_method (_auth_method_meta).
+Собирает метаданные из функций с @task(api=True) (`_api_meta`).
 Хранит MethodMeta для каждого метода.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ class MethodRegistry:
     """Реестр API-методов.
 
     Поддерживает:
-    - Регистрацию из функций с _auth_method_meta
+    - Регистрацию из функций с `_api_meta`
     - Поиск по module_name + method_name
     - Список модулей и методов
     """
@@ -51,7 +51,7 @@ class MethodRegistry:
         Args:
             module_name: Имя модуля (auth, workspace, ...).
             method_name: Имя метода.
-            metadata: Метаданные из _auth_method_meta.
+            metadata: Метаданные из `_api_meta`.
             func: Оригинальная функция.
 
         Raises:
@@ -84,7 +84,7 @@ class MethodRegistry:
     ) -> int:
         """Собрать методы из экземпляра провайдера/класса.
 
-        Проходит по атрибутам, ищет функции с _auth_method_meta.
+        Проходит по атрибутам, ищет функции с `_api_meta`. `_task_type` не требуется.
 
         Args:
             provider: Экземпляр провайдера (AuthProvider, LLMProvider, ...).
@@ -103,7 +103,7 @@ class MethodRegistry:
 
             # Обычная функция
             if callable(attr):
-                meta = getattr(attr, "_auth_method_meta", None)
+                meta = getattr(attr, "_api_meta", None)
                 if meta is not None:
                     method_name = meta.get("name", attr_name)
                     try:
@@ -116,7 +116,7 @@ class MethodRegistry:
 
             # Свойство — проверяем getter
             if isinstance(attr, property) and attr.fget is not None:
-                meta = getattr(attr.fget, "_auth_method_meta", None)
+                meta = getattr(attr.fget, "_api_meta", None)
                 if meta is not None:
                     method_name = meta.get("name", attr_name)
                     try:

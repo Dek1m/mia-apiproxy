@@ -4,14 +4,14 @@ from __future__ import annotations
 import pytest
 
 from apiproxy.registry import MethodRegistry, MethodMeta
-from modules.auth.decorators import auth_method
+from core.task_decorator import task
 
 
 class TestRegistryRegister:
     def test_register_basic(self):
         reg = MethodRegistry()
         func = lambda: None
-        func._auth_method_meta = {
+        func._api_meta = {
             "name": "test_method",
             "description": "Test",
             "args": {"x": "int"},
@@ -19,7 +19,7 @@ class TestRegistryRegister:
             "public": True,
             "required_permission": None,
         }
-        reg.register("mymodule", "test_method", func._auth_method_meta, func)
+        reg.register("mymodule", "test_method", func._api_meta, func)
         meta = reg.get_method("mymodule", "test_method")
         assert meta is not None
         assert meta.name == "test_method"
@@ -28,10 +28,10 @@ class TestRegistryRegister:
     def test_register_duplicate_raises(self):
         reg = MethodRegistry()
         func = lambda: None
-        func._auth_method_meta = {"name": "dup", "args": {}, "public": True}
-        reg.register("m", "dup", func._auth_method_meta, func)
+        func._api_meta = {"name": "dup", "args": {}, "public": True}
+        reg.register("m", "dup", func._api_meta, func)
         with pytest.raises(ValueError, match="Duplicate method"):
-            reg.register("m", "dup", func._auth_method_meta, func)
+            reg.register("m", "dup", func._api_meta, func)
 
 
 class TestRegistryCollect:
@@ -41,17 +41,21 @@ class TestRegistryCollect:
         assert count >= 5
         assert reg.has_module("fake")
 
-    def test_collect_skips_private(self):
-        class WithPrivate:
-            def _hidden(self): pass
+    def test_collect_only_api_true(self):
+        class Mixed:
+            @task(type="cpu")
+            async def internal(self) -> None:
+                pass
 
-            @auth_method(name="visible", public=True)
-            async def visible(self): pass
+            @task(type="cpu", api=True)
+            async def exported(self) -> None:
+                pass
 
         reg = MethodRegistry()
-        count = reg.collect_from_module(WithPrivate(), "test")
+        count = reg.collect_from_module(Mixed(), "test")
         assert count == 1
-        assert reg.get_method("test", "visible") is not None
+        assert reg.get_method("test", "exported") is not None
+        assert reg.get_method("test", "internal") is None
 
 
 class TestRegistryList:

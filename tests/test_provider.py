@@ -75,3 +75,15 @@ class TestProviderListApi:
     def test_list_api_empty_module(self, provider):
         methods = provider.list_api(module_name="nonexistent")
         assert methods == []
+
+
+class TestCallListApiNotTasks:
+    """call / list_api — не @task, converter зовёт in-process."""
+
+    def test_call_has_no_task_type(self) -> None:
+        assert not hasattr(ApiProxyProvider.call, "_task_type")
+        assert not hasattr(ApiProxyProvider.call, "_api_meta")
+
+    def test_list_api_has_no_task_type(self) -> None:
+        assert not hasattr(ApiProxyProvider.list_api, "_task_type")
+        assert not hasattr(ApiProxyProvider.list_api, "_api_meta")

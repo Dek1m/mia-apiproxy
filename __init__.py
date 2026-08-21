@@ -69,7 +69,7 @@ class ApiProxyModule(ModuleBase):
     """API Proxy модуль для Mia Framework.
 
     Прослойка между CLI и модулями:
-    - Сбор метаданных методов из модулей (@auth_method)
+    - Сбор метаданных методов из модулей (`@task(api=True)` → `_api_meta`)
     - Авторизация (AuthMiddleware)
     - Конвертация вызовов и нормализация ответов
     - Whitelist доступных модулей
@@ -86,7 +86,7 @@ class ApiProxyModule(ModuleBase):
     @property
     def meta(self) -> ModuleMeta:
         return ModuleMeta(
-            dependencies=["log", "auth", "workspace"],
+            dependencies=["log", "auth", "workspace", "llm"],
             timeout_defaults={"call": 30.0, "list_api": 5.0},
         )
 
@@ -157,15 +157,22 @@ class ApiProxyModule(ModuleBase):
                 )
 
     def _resolve_provider_class(self, module_name: str) -> type | None:
-        """Разрешить класс провайдера по имени модуля."""
-        _MAP: dict[str, type] = {}
+        """Разрешить класс провайдера по имени модуля.
+
+        workspace намеренно не мапится. ImportError — ключ не кладём.
+        """
+        mapping: dict[str, type] = {}
         try:
             from modules.auth.provider import AuthProvider
-            _MAP["auth"] = AuthProvider
+            mapping["auth"] = AuthProvider
         except ImportError:
             pass
-
-        return _MAP.get(module_name)
+        try:
+            from modules.llm.provider import LLMProvider
+            mapping["llm"] = LLMProvider
+        except ImportError:
+            pass
+        return mapping.get(module_name)
 
     def on_unload(self) -> None:
         """Очистка ресурсов."""

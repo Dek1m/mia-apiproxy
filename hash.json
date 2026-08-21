@@ -1,18 +1,19 @@
 {
   "version": "1.0.0",
   "files": {
-    "__init__.py": "2629b72f52888b54f1e3611c61abaeadbd9b0dc8c5d9006d535d141de9b21d08",
+    "__init__.py": "62a1fe0546e70f081c950e9d2874b5dd8a40b6d7deeea996d2ce3a182aed0fba",
     "config.py": "b9e311b0b798c1bc5f314821ad8ea978869260117ad51b0ba2022d89853e102b",
-    "converter.py": "d2cbe96892bdc50caa21d105a3ce664a9cb6e0fff5962c282a860c7285c69c16",
-    "middleware.py": "8e39a77e85e8f66688703fa747580edec2960ab5cbf6ad2ca512d6a684ca6636",
-    "provider.py": "31790f5e757b35354c6ac194dde6c193b80e86da9eb4f014ea8c21e1bebcd62d",
-    "registry.py": "ec58807d09245c95a053c6025b78858b36e4077c8b436a83c1cdd3cd0ba26dc4",
+    "converter.py": "144a3196a4e41e00a64484559ea2e982d6437529697db584a578ef2a9f3c75df",
+    "middleware.py": "aa98e4167039860b4670454ec5715aad7d7a1d187f59cd54b7d38eb0df8579d4",
+    "provider.py": "9fc5da063261a3f78715060ba55eb46958b629364e9061985a6f780828a2e605",
+    "registry.py": "6f63634ee7346b1f23f36c0ffe7a281d675caf431ed657603afa367337d437c0",
     "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "tests/conftest.py": "a87ad5ac04c48169132d381a7f401ad85aaf2bbe219975471aa2eb6f1b5fd206",
+    "tests/conftest.py": "4d533565ef8c179ce460123c6014b530d79270b813640d5d0ee83604394cc0dc",
+    "tests/test_collect_map.py": "4cdd68c9c5e7b9461ba65174244c98de728aa3a4fb6403af5151211fe3c1d324",
     "tests/test_converter.py": "a13ac479a0e712df802efcaf0a827f2ada395a69ee709815f9336661a362c852",
     "tests/test_middleware.py": "1cd2b20affaeec336abfe4401f83e63c03c0d2e8cfa8f8c200cdad5af9f04811",
-    "tests/test_provider.py": "c82f93a07e66844a533a71e2afd5ded05a5d5223b890ab7bacadb65925fafa6d",
-    "tests/test_registry.py": "ba0bb57ebe8e37b0947b6f30143aae5d95341ca7dd67a80d90e7e750bf6c5061"
+    "tests/test_provider.py": "c7026484e53b0aa3b11cf26e355950ca89fd26f31cb41269c2fa616e29630664",
+    "tests/test_registry.py": "a2de6be5ee5b4099666681b67121268a59b7f75970c784607bb152631d502548"
   },
-  "manifest_hash": "e95fb9dcc34598c0a994dd553dda32128e58e4db9beb58661376e82acb227954"
+  "manifest_hash": "639ceb11aa391016fd94f073672632646631eb9a65905245ab9b882dad045c67"
 }
