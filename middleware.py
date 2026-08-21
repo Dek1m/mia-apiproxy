@@ -11,6 +11,12 @@ from .registry import MethodMeta
 
 __all__ = ["AuthMiddleware", "AuthorizedCall"]
 
+# Живой access JWT не нужен: credential проверит provider (cookie / kwargs)
+_COOKIE_CREDENTIAL = frozenset({
+    ("auth", "refresh_token"),
+    ("auth", "logout"),
+})
+
 
 @dataclass
 class AuthorizedCall:
@@ -62,6 +68,10 @@ class AuthMiddleware:
         if meta.public:
             return AuthorizedCall(user_ctx=None, meta=meta)
 
+        # refresh/logout: не требуем живой access JWT
+        if (meta.module, meta.name) in _COOKIE_CREDENTIAL:
+            return AuthorizedCall(user_ctx=None, meta=meta)
+
         # Токен обязателен
         if not token:
             raise PermissionError("Authentication required (401)")
@@ -77,8 +87,8 @@ class AuthMiddleware:
         if user_ctx is None:
             raise PermissionError("Invalid or expired token (401)")
 
-        # Проверка permissions
-        if meta.required_permission:
+        # profile:self — любой валидный user_ctx, не users:read
+        if meta.required_permission and meta.required_permission != "profile:self":
             has_perm = await self._auth_provider.check_permission(
                 user_ctx.user_id, meta.required_permission,
             )

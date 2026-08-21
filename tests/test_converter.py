@@ -161,3 +161,30 @@ class TestCallMethod:
         )
         assert result["error"] is not None
         assert result["error"]["status_code"] == 401
+
+    @pytest.mark.asyncio
+    async def test_invalid_credentials_is_401_not_500(self):
+        from modules.auth.provider import InvalidCredentialsError
+
+        async def boom() -> None:
+            raise InvalidCredentialsError()
+
+        reg = MethodRegistry()
+        reg.register(
+            "auth",
+            "login",
+            {
+                "name": "login",
+                "description": "",
+                "args": {},
+                "return_type": "dict",
+                "public": True,
+                "required_permission": None,
+            },
+            boom,
+        )
+        mw = AuthMiddleware()
+        result = await call_method(reg, mw, "auth", "login", {})
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 401
+        assert result["error"]["code"] == "INVALID_CREDENTIALS"

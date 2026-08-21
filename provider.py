@@ -48,6 +48,10 @@ class ApiProxyProvider:
         """Доступ к middleware авторизации."""
         return self._middleware
 
+    @property
+    def auth_provider(self) -> Any | None:
+        return self._auth_provider
+
     async def call(
         self,
         module_name: str,

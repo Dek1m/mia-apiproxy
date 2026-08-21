@@ -11,6 +11,29 @@ from .registry import MethodMeta
 
 __all__ = ["call_method", "ApiError"]
 
+_SELF_IGNORE_USER_ID = frozenset({
+    "get_me",
+    "update_me",
+    "change_username",
+    "set_avatar",
+    "clear_avatar",
+    "get_my_groups",
+})
+
+_STATUS_BY_CODE = {
+    "INVALID_CREDENTIALS": 401,
+    "LOCKED": 403,
+    "DISABLED": 403,
+    "REUSE_DETECTED": 401,
+    "FORBIDDEN": 403,
+    "PERMISSION_DENIED": 403,
+    "NOT_FOUND": 404,
+    "AUTH_ERROR": 401,
+    "BOOTSTRAP_DONE": 409,
+    "CSRF_HEADER": 403,
+    "ORIGIN_MISMATCH": 403,
+}
+
 
 class ApiError(Exception):
     """Ошибка API-вызова."""
@@ -151,7 +174,7 @@ async def call_method(
 
     # 2. Авторизация
     try:
-        await middleware.authorize(meta, token=token)
+        authorized = await middleware.authorize(meta, token=token)
     except PermissionError as e:
         msg = str(e)
         if "401" in msg:
@@ -166,6 +189,9 @@ async def call_method(
     except ApiError as e:
         return e.to_dict()
 
+    _inject_session(authorized, validated_kwargs, meta)
+    validated_kwargs = _kwargs_for_func(meta.func, validated_kwargs)
+
     # 4. Вызов метода
     try:
         result = await meta.func(**validated_kwargs)
@@ -179,6 +205,9 @@ async def call_method(
         error = ApiError(403, str(e))
         return error.to_dict()
     except Exception as e:
+        coded = _from_coded_error(e)
+        if coded is not None:
+            return coded.to_dict()
         if log is not None:
             log.error("method_call_error", extra={"mod": module_name, "method": method_name, "error": str(e)})
         error = ApiError(500, f"Internal error: {e}")
@@ -186,6 +215,38 @@ async def call_method(
 
     # 5. Нормализация ответа
     return {"data": result, "error": None}
+
+
+def _inject_session(authorized: Any, kwargs: dict[str, Any], meta: MethodMeta) -> None:
+    """user_id из access JWT/cookie. Клиентский user_id на get_me/update_me игнор."""
+    user_ctx = getattr(authorized, "user_ctx", None)
+    session_id = getattr(user_ctx, "user_id", None) if user_ctx is not None else None
+    if session_id and meta.module == "auth" and meta.name in _SELF_IGNORE_USER_ID:
+        kwargs.pop("user_id", None)
+    if not session_id:
+        return
+    kwargs["_session_user_id"] = session_id
+
+
+def _kwargs_for_func(func: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
+    try:
+        params = inspect.signature(func).parameters
+    except (TypeError, ValueError):
+        return kwargs
+    if any(item.kind == inspect.Parameter.VAR_KEYWORD for item in params.values()):
+        return kwargs
+    return {key: value for key, value in kwargs.items() if key in params}
+
+
+def _from_coded_error(exc: BaseException) -> ApiError | None:
+    """AuthError.code → HTTP ≠ 500. Не глотаем INVALID_CREDENTIALS."""
+    code = getattr(exc, "code", None)
+    if not isinstance(code, str) or not code:
+        return None
+    status = _STATUS_BY_CODE.get(code)
+    if status is None:
+        return None
+    return ApiError(status, str(exc), code)
 
 
 class NotFoundError(Exception):

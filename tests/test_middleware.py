@@ -11,16 +11,18 @@ from modules.auth.provider import UserContext
 def _make_meta(
     public: bool = False,
     required_permission: str | None = None,
+    name: str = "test",
+    module: str = "test",
 ) -> MethodMeta:
     return MethodMeta(
-        name="test",
+        name=name,
         description="test method",
         args={},
         return_type=None,
         public=public,
         required_permission=required_permission,
         func=lambda: None,
-        module="test",
+        module=module,
     )
 
 
@@ -54,6 +56,14 @@ class TestMiddlewareInvalidToken:
 
 @pytest.mark.asyncio
 class TestMiddlewareValidToken:
+    async def test_profile_self_any_authenticated(self, fake_auth_provider):
+        user_ctx = UserContext(user_id="u1", username="plain", perms_version=1)
+        fake_auth_provider.register_token("good-token", user_ctx)
+        mw = AuthMiddleware(auth_provider=fake_auth_provider)
+        meta = _make_meta(public=False, required_permission="profile:self")
+        result = await mw.authorize(meta, token="good-token")
+        assert result.user_ctx.user_id == "u1"
+
     async def test_valid_token_no_permission_required(self, fake_auth_provider):
         user_ctx = UserContext(user_id="u1", username="admin", perms_version=1)
         fake_auth_provider.register_token("good-token", user_ctx)
@@ -103,6 +113,21 @@ class TestMiddlewareWildcard:
         meta = _make_meta(public=False, required_permission="users:delete")
         result = await mw.authorize(meta, token="good-token")
         assert result.user_ctx is not None
+
+
+@pytest.mark.asyncio
+class TestMiddlewareCookieCredential:
+    async def test_refresh_without_access_token(self):
+        mw = AuthMiddleware(auth_provider=None)
+        meta = _make_meta(public=False, name="refresh_token", module="auth")
+        result = await mw.authorize(meta, token=None)
+        assert result.user_ctx is None
+
+    async def test_logout_without_access_token(self):
+        mw = AuthMiddleware(auth_provider=None)
+        meta = _make_meta(public=False, name="logout", module="auth")
+        result = await mw.authorize(meta, token=None)
+        assert result.user_ctx is None
 
 
 @pytest.mark.asyncio
