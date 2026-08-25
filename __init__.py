@@ -159,7 +159,7 @@ class ApiProxyModule(ModuleBase):
     def _resolve_provider_class(self, module_name: str) -> type | None:
         """Разрешить класс провайдера по имени модуля.
 
-        workspace намеренно не мапится. ImportError — ключ не кладём.
+        ImportError — ключ не кладём.
         """
         mapping: dict[str, type] = {}
         try:
@@ -170,6 +170,11 @@ class ApiProxyModule(ModuleBase):
         try:
             from modules.llm.provider import LLMProvider
             mapping["llm"] = LLMProvider
+        except ImportError:
+            pass
+        try:
+            from modules.workspace.provider import WorkspaceProvider
+            mapping["workspace"] = WorkspaceProvider
         except ImportError:
             pass
         return mapping.get(module_name)

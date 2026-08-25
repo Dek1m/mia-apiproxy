@@ -217,10 +217,20 @@ async def call_method(
     return {"data": result, "error": None}
 
 
+def _ctx_user_id(ctx: Any) -> str | None:
+    if ctx is None:
+        return None
+    if isinstance(ctx, dict):
+        value = ctx.get("user_id")
+        return str(value) if value else None
+    value = getattr(ctx, "user_id", None)
+    return str(value) if value else None
+
+
 def _inject_session(authorized: Any, kwargs: dict[str, Any], meta: MethodMeta) -> None:
     """user_id из access JWT/cookie. Клиентский user_id на get_me/update_me игнор."""
     user_ctx = getattr(authorized, "user_ctx", None)
-    session_id = getattr(user_ctx, "user_id", None) if user_ctx is not None else None
+    session_id = _ctx_user_id(user_ctx)
     if session_id and meta.module == "auth" and meta.name in _SELF_IGNORE_USER_ID:
         kwargs.pop("user_id", None)
     if not session_id:
