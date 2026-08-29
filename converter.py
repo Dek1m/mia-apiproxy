@@ -37,6 +37,13 @@ _STATUS_BY_CODE = {
     "BOOTSTRAP_DONE": 409,
     "CSRF_HEADER": 403,
     "ORIGIN_MISMATCH": 403,
+    "DUPLICATE_NAME": 409,
+}
+
+# Клиенту — короткий текст; в лог идёт str(exc).
+_HUMAN_BY_CODE = {
+    "DUPLICATE_NAME": "A provider with this name already exists",
+    "WRONG_URL": "Wrong URL",
 }
 
 
@@ -212,10 +219,15 @@ async def call_method(
     except Exception as e:
         coded = _from_coded_error(e)
         if coded is not None:
+            if log is not None:
+                log.warning(
+                    "method_call_coded",
+                    extra={"mod": module_name, "method": method_name, "code": coded.code, "error": str(e)},
+                )
             return coded.to_dict()
         if log is not None:
             log.error("method_call_error", extra={"mod": module_name, "method": method_name, "error": str(e)})
-        error = ApiError(500, f"Internal error: {e}")
+        error = ApiError(500, "Internal error")
         return error.to_dict()
 
     # 5. Нормализация ответа
@@ -259,14 +271,17 @@ def _kwargs_for_func(func: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
 
 
 def _from_coded_error(exc: BaseException) -> ApiError | None:
-    """AuthError.code → HTTP ≠ 500. Не глотаем INVALID_CREDENTIALS."""
+    """code → HTTP ≠ 500. Клиенту human, в лог — str(exc)."""
     code = getattr(exc, "code", None)
     if not isinstance(code, str) or not code:
         return None
     status = _STATUS_BY_CODE.get(code)
     if status is None:
         return None
-    return ApiError(status, str(exc), code)
+    human = getattr(exc, "human", None)
+    if not isinstance(human, str) or not human:
+        human = _HUMAN_BY_CODE.get(code) or str(exc)
+    return ApiError(status, human, code)
 
 
 class NotFoundError(Exception):
