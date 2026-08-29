@@ -38,12 +38,21 @@ _STATUS_BY_CODE = {
     "CSRF_HEADER": 403,
     "ORIGIN_MISMATCH": 403,
     "DUPLICATE_NAME": 409,
+    "OAUTH_DENIED": 400,
+    "OAUTH_EXPIRED": 400,
+    "OAUTH_PENDING": 400,
+    "OAUTH_UNSUPPORTED": 400,
+    "SECRETS": 500,
 }
 
 # Клиенту — короткий текст; в лог идёт str(exc).
 _HUMAN_BY_CODE = {
     "DUPLICATE_NAME": "A provider with this name already exists",
     "WRONG_URL": "Wrong URL",
+    "OAUTH_DENIED": "Sign-in was denied",
+    "OAUTH_EXPIRED": "Sign-in expired. Start again",
+    "OAUTH_PENDING": "Finish sign-in first",
+    "OAUTH_UNSUPPORTED": "This OAuth provider is not supported yet",
 }
 
 
