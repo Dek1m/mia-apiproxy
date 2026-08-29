@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 
 __all__ = ["ApiproxyConfig"]
 
+# Collect skip, если провайдера нет — admin не обязателен для старта apiproxy
+_DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm", "admin"]
+
 
 @dataclass
 class ApiproxyConfig:
@@ -17,7 +20,7 @@ class ApiproxyConfig:
     """
 
     # Whitelist модулей (comma-separated в ENV)
-    whitelist: list[str] = field(default_factory=lambda: ["auth", "workspace", "llm"])
+    whitelist: list[str] = field(default_factory=lambda: list(_DEFAULT_WHITELIST))
 
     # Таймаут на выполнение метода (секунды)
     method_timeout: float = 30.0
@@ -34,7 +37,7 @@ class ApiproxyConfig:
         whitelist = (
             [m.strip() for m in whitelist_raw.split(",") if m.strip()]
             if whitelist_raw
-            else ["auth", "workspace", "llm"]
+            else list(_DEFAULT_WHITELIST)
         )
 
         timeout_raw = os.getenv("MIA_APIPROXY_METHOD_TIMEOUT", "")

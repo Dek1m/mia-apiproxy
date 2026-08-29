@@ -1,6 +1,6 @@
 """API Proxy Module — прослойка между CLI и модулями Mia.
 
-Собирает методы из модулей (auth, workspace, llm), выполняет авторизацию
+Собирает методы из модулей (auth, workspace, llm, admin), выполняет авторизацию
 через AuthMiddleware, конвертирует вызовы и возвращает нормализованные ответы.
 
 Использование:
@@ -61,8 +61,8 @@ __all__ = [
 
 MODULE_VERSION = "1.0.0"
 
-# Whitelist модулей по умолчанию
-_DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm"]
+# Whitelist модулей по умолчанию. admin — опционален: collect skip, если нет провайдера
+_DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm", "admin"]
 
 
 class ApiProxyModule(ModuleBase):
@@ -122,8 +122,10 @@ class ApiProxyModule(ModuleBase):
 
         self._log.info(
             "apiproxy_module_loaded",
-            version=self.version,
-            modules=list(self._provider.registry.list_modules()),
+            extra={
+                "version": self.version,
+                "modules": list(self._provider.registry.list_modules()),
+            },
         )
 
     def _collect_methods(self, state: Any) -> None:
@@ -146,14 +148,12 @@ class ApiProxyModule(ModuleBase):
                 count = registry.collect_from_module(provider, module_name)
                 self._log.info(
                     "methods_collected",
-                    module=module_name,
-                    count=count,
+                    extra={"module": module_name, "count": count},
                 )
             except Exception as e:
                 self._log.warning(
                     "failed_to_collect_methods",
-                    module=module_name,
-                    error=str(e),
+                    extra={"module": module_name, "error": str(e)},
                 )
 
     def _resolve_provider_class(self, module_name: str) -> type | None:
@@ -175,6 +175,11 @@ class ApiProxyModule(ModuleBase):
         try:
             from modules.workspace.provider import WorkspaceProvider
             mapping["workspace"] = WorkspaceProvider
+        except ImportError:
+            pass
+        try:
+            from modules.admin.provider import AdminProvider
+            mapping["admin"] = AdminProvider
         except ImportError:
             pass
         return mapping.get(module_name)
