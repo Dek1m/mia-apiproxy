@@ -36,6 +36,8 @@ class ApiProxyProvider:
         self._registry = MethodRegistry(log=log)
         self._middleware = AuthMiddleware(auth_provider=auth_provider, log=log)
         self._auth_provider = auth_provider
+        self._llm_provider: Any | None = None
+        self._state: Any | None = None
         self._log = log
 
     @property
@@ -51,6 +53,22 @@ class ApiProxyProvider:
     @property
     def auth_provider(self) -> Any | None:
         return self._auth_provider
+
+    @property
+    def llm_provider(self) -> Any | None:
+        if self._llm_provider is not None:
+            return self._llm_provider
+        if self._state is None:
+            return None
+        try:
+            from modules.llm.provider import LLMProvider
+            self._llm_provider = self._state.services.resolve(LLMProvider)
+        except Exception:
+            return None
+        return self._llm_provider
+
+    def bind_state(self, state: Any) -> None:
+        self._state = state
 
     async def call(
         self,

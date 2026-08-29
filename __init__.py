@@ -113,6 +113,7 @@ class ApiProxyModule(ModuleBase):
             auth_provider=auth_provider,
             log=self._log,
         )
+        self._provider.bind_state(state)
 
         # Собираем методы из загруженных модулей
         self._collect_methods(state)
