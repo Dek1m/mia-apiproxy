@@ -96,6 +96,16 @@ class AuthMiddleware:
                 user_id, meta.required_permission,
             )
             if not has_perm:
+                if self._log is not None:
+                    self._log.warning(
+                        "permission_denied",
+                        extra={
+                            "user_id": user_id,
+                            "permission": meta.required_permission,
+                            "module": meta.module,
+                            "method": meta.name,
+                        },
+                    )
                 raise PermissionError(
                     f"Permission denied: {meta.required_permission} (403)"
                 )
