@@ -73,6 +73,14 @@ class TestMiddlewareValidToken:
         assert result.user_ctx is not None
         assert result.user_ctx.user_id == "u1"
 
+    async def test_dict_user_ctx_from_worker(self, fake_auth_provider):
+        fake_auth_provider.register_token("good-token", {"user_id": "u1", "username": "admin"})
+        fake_auth_provider.set_permissions("u1", {"llm:config"})
+        mw = AuthMiddleware(auth_provider=fake_auth_provider)
+        meta = _make_meta(public=False, required_permission="llm:config")
+        result = await mw.authorize(meta, token="good-token")
+        assert result.user_ctx["user_id"] == "u1"
+
     async def test_valid_token_with_permission(self, fake_auth_provider):
         user_ctx = UserContext(user_id="u1", username="admin", perms_version=1)
         fake_auth_provider.register_token("good-token", user_ctx)

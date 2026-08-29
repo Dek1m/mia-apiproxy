@@ -72,10 +72,10 @@ class FakeAuthProvider:
     """Фейковый auth_provider для тестов — без БД."""
 
     def __init__(self) -> None:
-        self._tokens: dict[str, UserContext] = {}
+        self._tokens: dict[str, Any] = {}
         self._permissions: dict[str, set[str]] = {}
 
-    def register_token(self, token: str, user_ctx: UserContext) -> None:
+    def register_token(self, token: str, user_ctx: Any) -> None:
         self._tokens[token] = user_ctx
 
     def set_permissions(self, user_id: str, perms: set[str]) -> None:

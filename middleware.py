@@ -89,8 +89,11 @@ class AuthMiddleware:
 
         # profile:self — любой валидный user_ctx, не users:read
         if meta.required_permission and meta.required_permission != "profile:self":
+            user_id = _ctx_user_id(user_ctx)
+            if not user_id:
+                raise PermissionError("Invalid or expired token (401)")
             has_perm = await self._auth_provider.check_permission(
-                user_ctx.user_id, meta.required_permission,
+                user_id, meta.required_permission,
             )
             if not has_perm:
                 raise PermissionError(
@@ -98,3 +101,14 @@ class AuthMiddleware:
                 )
 
         return AuthorizedCall(user_ctx=user_ctx, meta=meta)
+
+
+def _ctx_user_id(ctx: Any) -> str | None:
+    """JWT/celery может отдать UserContext или dict."""
+    if ctx is None:
+        return None
+    if isinstance(ctx, dict):
+        value = ctx.get("user_id")
+        return str(value) if value else None
+    value = getattr(ctx, "user_id", None)
+    return str(value) if value else None
