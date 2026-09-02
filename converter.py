@@ -241,7 +241,16 @@ async def call_method(
                 )
             return coded.to_dict()
         if log is not None:
-            log.error("method_call_error", extra={"mod": module_name, "method": method_name, "error": str(e)})
+            log.error(
+                "method_call_error",
+                extra={
+                    "mod": module_name,
+                    "method": method_name,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "error": str(e),
+                },
+            )
         error = ApiError(500, "Internal error")
         return error.to_dict()
 
