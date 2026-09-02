@@ -29,6 +29,8 @@ _STATUS_BY_CODE = {
     "PERMISSION_DENIED": 403,
     "NOT_FOUND": 404,
     "AUTH_ERROR": 401,
+    "VALIDATION": 400,
+    "NOTIFICATION_ERROR": 400,
     "INVALID_NAME": 400,
     "WRONG_URL": 400,
     "PATH_ESCAPE": 400,
@@ -47,6 +49,8 @@ _STATUS_BY_CODE = {
 
 # Клиенту — короткий текст; в лог идёт str(exc).
 _HUMAN_BY_CODE = {
+    "VALIDATION": "Invalid request",
+    "NOTIFICATION_ERROR": "Could not load notifications",
     "DUPLICATE_NAME": "A provider with this name already exists",
     "WRONG_URL": "Wrong URL",
     "OAUTH_DENIED": "Sign-in was denied",
@@ -265,8 +269,11 @@ def _inject_session(authorized: Any, kwargs: dict[str, Any], meta: MethodMeta) -
 
 
 def _kwargs_for_func(func: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
+    # unwrap: @task-обёртка всегда *args/**kwargs — по ней extra keys не режутся
+    # и улетают в LocalInvoke → TypeError. Смотрим исходную сигнатуру.
+    target = inspect.unwrap(func)
     try:
-        params = inspect.signature(func).parameters
+        params = inspect.signature(target).parameters
     except (TypeError, ValueError):
         return kwargs
     if any(item.kind == inspect.Parameter.VAR_KEYWORD for item in params.values()):

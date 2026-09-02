@@ -188,3 +188,66 @@ class TestCallMethod:
         assert result["error"] is not None
         assert result["error"]["status_code"] == 401
         assert result["error"]["code"] == "INVALID_CREDENTIALS"
+
+    @pytest.mark.asyncio
+    async def test_validation_code_is_400_not_500(self):
+        class DomainError(Exception):
+            def __init__(self) -> None:
+                self.code = "VALIDATION"
+                self.human = "Invalid page cursor"
+                super().__init__("invalid cursor")
+
+        async def boom() -> None:
+            raise DomainError()
+
+        reg = MethodRegistry()
+        reg.register(
+            "notification",
+            "list",
+            {
+                "name": "list",
+                "description": "",
+                "args": {},
+                "return_type": "dict",
+                "public": True,
+                "required_permission": None,
+            },
+            boom,
+        )
+        mw = AuthMiddleware()
+        result = await call_method(reg, mw, "notification", "list", {})
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 400
+        assert result["error"]["code"] == "VALIDATION"
+        assert result["error"]["message"] == "Invalid page cursor"
+
+    @pytest.mark.asyncio
+    async def test_unknown_kwargs_dropped_not_500(self):
+        async def list_fn(
+            limit: int = 50,
+            cursor: str = "",
+            _session_user_id: str | None = None,
+        ) -> dict[str, object]:
+            return {"items": [], "next_cursor": None}
+
+        list_fn._api_meta = {  # type: ignore[attr-defined]
+            "name": "list",
+            "description": "",
+            "args": {"limit": "int", "cursor": "str"},
+            "return_type": "dict",
+            "public": True,
+            "required_permission": None,
+        }
+        reg = MethodRegistry()
+        reg.register("notification", "list", list_fn._api_meta, list_fn)
+        mw = AuthMiddleware()
+        result = await call_method(
+            reg,
+            mw,
+            "notification",
+            "list",
+            {"limit": 50, "unread_first": True, "before": "legacy"},
+        )
+        assert result["error"] is None
+        assert result["data"]["items"] == []
+        assert result["data"]["next_cursor"] is None
