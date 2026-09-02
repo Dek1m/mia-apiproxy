@@ -3,17 +3,17 @@
   "files": {
     "__init__.py": "dbd90e3437b0704c7aafe6954b6b8c65fb07efbf445ba084f0424c17cc6cf5cc",
     "config.py": "3fbdb9cd502e06a858d2ce1a4b7df278aa925174f7866bfb847ce07c0c52f71e",
-    "converter.py": "2856a1d7e6bdfb5ac936d7ff35015d23228c21657399d29cd3915467334d5dc9",
+    "converter.py": "3ce1e43544aeb5bb1526736f0dab006325bba84425f2719f45dfc75aac82b4db",
     "middleware.py": "3b8f66266903fac89f47100f21e8886632436c245789ee9c25166c6edd5ac2cf",
     "provider.py": "6b61380c921d99ba15c20e5869cdbba4dc51e253c470d55a8b0e3074ed553d0f",
     "registry.py": "6f63634ee7346b1f23f36c0ffe7a281d675caf431ed657603afa367337d437c0",
     "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "tests/conftest.py": "8383be353af6149ce1041d98c8f0e0e4f5dd7937530ad567029be4692f71845d",
     "tests/test_collect_map.py": "bf113609b6a7c75026f23704d311770d04b20c94bb6a26228218ddc949e33567",
-    "tests/test_converter.py": "6c29d0db9e965d855b1d58d45fdc304019de6e365e6ab84e1ad8176dbf386696",
+    "tests/test_converter.py": "7438085f8d154d7860cef22b90b8619728d6475d2b0ed35ab810aaf1b786f92c",
     "tests/test_middleware.py": "b80de251d730e75834b05ebe93669cce32140ac6b36d570e6a75d5aeaf8e79e2",
     "tests/test_provider.py": "c7026484e53b0aa3b11cf26e355950ca89fd26f31cb41269c2fa616e29630664",
     "tests/test_registry.py": "a2de6be5ee5b4099666681b67121268a59b7f75970c784607bb152631d502548"
   },
-  "manifest_hash": "f7fb6ebddd0d9529707ecec6383e29b10c9c6683e57ea16ab8064bbea5f537c4"
+  "manifest_hash": "03f405bdffa542b588353281b16eb1ea4977c76127998d0e5051b54b7fbf059a"
 }

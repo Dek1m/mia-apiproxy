@@ -222,6 +222,38 @@ class TestCallMethod:
         assert result["error"]["message"] == "Invalid page cursor"
 
     @pytest.mark.asyncio
+    async def test_query_failed_is_500_with_human(self):
+        class DomainError(Exception):
+            def __init__(self) -> None:
+                self.code = "QUERY_FAILED"
+                self.human = "Could not load notifications"
+                super().__init__("could not determine data type of parameter $2")
+
+        async def boom() -> None:
+            raise DomainError()
+
+        reg = MethodRegistry()
+        reg.register(
+            "notification",
+            "list",
+            {
+                "name": "list",
+                "description": "",
+                "args": {},
+                "return_type": "dict",
+                "public": True,
+                "required_permission": None,
+            },
+            boom,
+        )
+        mw = AuthMiddleware()
+        result = await call_method(reg, mw, "notification", "list", {})
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 500
+        assert result["error"]["code"] == "QUERY_FAILED"
+        assert result["error"]["message"] == "Could not load notifications"
+
+    @pytest.mark.asyncio
     async def test_unknown_kwargs_dropped_not_500(self):
         async def list_fn(
             limit: int = 50,

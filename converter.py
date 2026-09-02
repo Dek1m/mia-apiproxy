@@ -45,12 +45,14 @@ _STATUS_BY_CODE = {
     "OAUTH_PENDING": 400,
     "OAUTH_UNSUPPORTED": 400,
     "SECRETS": 500,
+    "QUERY_FAILED": 500,
 }
 
 # Клиенту — короткий текст; в лог идёт str(exc).
 _HUMAN_BY_CODE = {
     "VALIDATION": "Invalid request",
     "NOTIFICATION_ERROR": "Could not load notifications",
+    "QUERY_FAILED": "Could not load notifications",
     "DUPLICATE_NAME": "A provider with this name already exists",
     "WRONG_URL": "Wrong URL",
     "OAUTH_DENIED": "Sign-in was denied",
@@ -287,7 +289,7 @@ def _kwargs_for_func(func: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
 
 
 def _from_coded_error(exc: BaseException) -> ApiError | None:
-    """code → HTTP ≠ 500. Клиенту human, в лог — str(exc)."""
+    """code → HTTP. Клиенту human (QUERY_FAILED — 500 без сырого SQL), в лог — str(exc)."""
     code = getattr(exc, "code", None)
     if not isinstance(code, str) or not code:
         return None
