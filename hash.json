@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "files": {
     "__init__.py": "dbd90e3437b0704c7aafe6954b6b8c65fb07efbf445ba084f0424c17cc6cf5cc",
-    "config.py": "0d35e418b839281056d745b768eeb63ef2824fdf9305d57c4ab804518e513853",
+    "config.py": "3fbdb9cd502e06a858d2ce1a4b7df278aa925174f7866bfb847ce07c0c52f71e",
     "converter.py": "697acf541fdce5bb9b961da773946a651ed5bf01b63a127129763a2ed637d47d",
     "middleware.py": "3b8f66266903fac89f47100f21e8886632436c245789ee9c25166c6edd5ac2cf",
     "provider.py": "6b61380c921d99ba15c20e5869cdbba4dc51e253c470d55a8b0e3074ed553d0f",
@@ -15,5 +15,5 @@
     "tests/test_provider.py": "c7026484e53b0aa3b11cf26e355950ca89fd26f31cb41269c2fa616e29630664",
     "tests/test_registry.py": "a2de6be5ee5b4099666681b67121268a59b7f75970c784607bb152631d502548"
   },
-  "manifest_hash": "a8a7c382c9ca64b83da5b341f5e6bef6eea838ee300ebbc1aa0770fac3e6ce6e"
+  "manifest_hash": "54d85c34dc8f7940f6165ce4b8c9b1f6733c95435818734c9425f5bc5a112d9d"
 }

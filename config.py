@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 __all__ = ["ApiproxyConfig"]
 
 # Collect skip, если провайдера нет — admin не обязателен для старта apiproxy
-_DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm", "admin"]
+_DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm", "admin", "fs", "notification"]
 
 
 @dataclass
