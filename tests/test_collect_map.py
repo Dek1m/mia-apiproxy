@@ -24,7 +24,7 @@ def test_resolve_provider_map_keys() -> None:
     instance = _load_api_proxy_module()()
     resolved = {
         name: instance._resolve_provider_class(name)
-        for name in ("auth", "llm", "workspace", "admin", "fs", "notification", "db")
+        for name in ("auth", "llm", "workspace", "system", "fs", "notification", "db")
     }
     keys = {name for name, cls in resolved.items() if cls is not None}
     assert "auth" in keys
@@ -32,10 +32,10 @@ def test_resolve_provider_map_keys() -> None:
     assert resolved["db"] is None
     if resolved["workspace"] is not None:
         assert resolved["workspace"].__name__ == "WorkspaceProvider"
-    if resolved["admin"] is not None:
-        assert resolved["admin"].__name__ == "AdminProvider"
+    if resolved["system"] is not None:
+        assert resolved["system"].__name__ == "SystemProvider"
     if resolved["fs"] is not None:
         assert resolved["fs"].__name__ == "FsProvider"
     if resolved["notification"] is not None:
         assert resolved["notification"].__name__ == "NotificationProvider"
-    assert keys <= {"auth", "llm", "workspace", "admin", "fs", "notification"}
+    assert keys <= {"auth", "llm", "workspace", "system", "fs", "notification"}

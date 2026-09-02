@@ -1,6 +1,6 @@
 """API Proxy Module — прослойка между CLI и модулями Mia.
 
-Собирает методы из модулей (auth, workspace, llm, admin, fs, notification), выполняет авторизацию
+Собирает методы из модулей (auth, workspace, llm, system, fs, notification), выполняет авторизацию
 через AuthMiddleware, конвертирует вызовы и возвращает нормализованные ответы.
 
 Использование:
@@ -61,8 +61,8 @@ __all__ = [
 
 MODULE_VERSION = "1.0.0"
 
-# Whitelist модулей по умолчанию. admin — опционален: collect skip, если нет провайдера
-_DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm", "admin", "fs", "notification"]
+# Whitelist модулей по умолчанию. system — опционален: collect skip, если нет провайдера
+_DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm", "system", "fs", "notification"]
 
 
 class ApiProxyModule(ModuleBase):
@@ -179,8 +179,8 @@ class ApiProxyModule(ModuleBase):
         except ImportError:
             pass
         try:
-            from modules.admin.provider import AdminProvider
-            mapping["admin"] = AdminProvider
+            from modules.system.provider import SystemProvider
+            mapping["system"] = SystemProvider
         except ImportError:
             pass
         try:
