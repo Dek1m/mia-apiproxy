@@ -88,6 +88,10 @@ class ApiProxyModule(ModuleBase):
         return ModuleMeta(
             dependencies=["log", "auth", "workspace", "llm"],
             timeout_defaults={"call": 30.0, "list_api": 5.0},
+            load_on="api",
+            is_system=True,
+            display_name="API Proxy",
+            is_example=False,
         )
 
     def __init__(self, config: ApiproxyConfig | None = None) -> None:
