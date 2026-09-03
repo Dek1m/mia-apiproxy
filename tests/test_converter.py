@@ -254,6 +254,38 @@ class TestCallMethod:
         assert result["error"]["message"] == "Could not load notifications"
 
     @pytest.mark.asyncio
+    async def test_not_implemented_is_501_not_500(self):
+        class DomainError(Exception):
+            def __init__(self) -> None:
+                self.code = "NOT_IMPLEMENTED"
+                self.human = "Not implemented yet"
+                super().__init__("Not implemented yet")
+
+        async def boom() -> None:
+            raise DomainError()
+
+        reg = MethodRegistry()
+        reg.register(
+            "system",
+            "modules_reload",
+            {
+                "name": "modules_reload",
+                "description": "",
+                "args": {"name": "str"},
+                "return_type": "dict",
+                "public": True,
+                "required_permission": None,
+            },
+            boom,
+        )
+        mw = AuthMiddleware()
+        result = await call_method(reg, mw, "system", "modules_reload", {"name": "fs"})
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 501
+        assert result["error"]["code"] == "NOT_IMPLEMENTED"
+        assert result["error"]["message"] == "Not implemented yet"
+
+    @pytest.mark.asyncio
     async def test_unknown_kwargs_dropped_not_500(self):
         async def list_fn(
             limit: int = 50,

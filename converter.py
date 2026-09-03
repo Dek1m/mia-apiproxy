@@ -44,6 +44,7 @@ _STATUS_BY_CODE = {
     "OAUTH_EXPIRED": 400,
     "OAUTH_PENDING": 400,
     "OAUTH_UNSUPPORTED": 400,
+    "NOT_IMPLEMENTED": 501,
     "SECRETS": 500,
     "QUERY_FAILED": 500,
 }
@@ -59,6 +60,7 @@ _HUMAN_BY_CODE = {
     "OAUTH_EXPIRED": "Sign-in expired. Start again",
     "OAUTH_PENDING": "Finish sign-in first",
     "OAUTH_UNSUPPORTED": "This OAuth provider is not supported yet",
+    "NOT_IMPLEMENTED": "Not implemented yet",
 }
 
 
