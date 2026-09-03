@@ -1,8 +1,10 @@
-"""Tests for ApiProxyModule._resolve_provider_class mapping."""
+"""Collect с module._provider, без mapping классов."""
 from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 
 def _load_api_proxy_module() -> type:
@@ -20,22 +22,56 @@ def _load_api_proxy_module() -> type:
     return module.ApiProxyModule
 
 
-def test_resolve_provider_map_keys() -> None:
-    instance = _load_api_proxy_module()()
-    resolved = {
-        name: instance._resolve_provider_class(name)
-        for name in ("auth", "llm", "workspace", "system", "fs", "notification", "db")
+class _FakeProvider:
+    async def ping(self) -> str:
+        return "ok"
+
+    ping._api_meta = {
+        "name": "ping",
+        "description": "ping",
+        "args": {},
+        "return_type": "str",
+        "public": True,
+        "required_permission": None,
     }
-    keys = {name for name, cls in resolved.items() if cls is not None}
-    assert "auth" in keys
-    assert "llm" in keys
-    assert resolved["db"] is None
-    if resolved["workspace"] is not None:
-        assert resolved["workspace"].__name__ == "WorkspaceProvider"
-    if resolved["system"] is not None:
-        assert resolved["system"].__name__ == "SystemProvider"
-    if resolved["fs"] is not None:
-        assert resolved["fs"].__name__ == "FsProvider"
-    if resolved["notification"] is not None:
-        assert resolved["notification"].__name__ == "NotificationProvider"
-    assert keys <= {"auth", "llm", "workspace", "system", "fs", "notification"}
+
+
+class _Loaded:
+    def __init__(self, mapping: dict[str, Any]) -> None:
+        self._mapping = mapping
+
+    def list_all(self) -> list[str]:
+        return list(self._mapping)
+
+    def get(self, name: str) -> Any:
+        return self._mapping.get(name)
+
+
+def test_no_resolve_provider_class() -> None:
+    cls = _load_api_proxy_module()
+    assert not hasattr(cls, "_resolve_provider_class")
+    assert not hasattr(cls(), "_resolve_provider_class")
+
+
+def test_collect_from_loaded_provider() -> None:
+    from apiproxy.provider import ApiProxyProvider
+
+    instance = _load_api_proxy_module()()
+    instance._log = SimpleNamespace(
+        info=lambda *a, **k: None,
+        warning=lambda *a, **k: None,
+        debug=lambda *a, **k: None,
+    )
+    instance._provider = ApiProxyProvider()
+    fake = _FakeProvider()
+    state = SimpleNamespace(
+        modules=_Loaded({
+            "fs": SimpleNamespace(_provider=fake),
+            "db": SimpleNamespace(_provider=None),
+            "apiproxy": SimpleNamespace(_provider=object()),
+        }),
+    )
+    instance._collect_methods(state)
+    assert instance._provider.registry.get_method("fs", "ping") is not None
+    assert "db" not in instance._provider.registry.list_modules()
+    assert "apiproxy" not in instance._provider.registry.list_modules()

@@ -115,7 +115,7 @@ class FakeModule:
         "required_permission": None,
     }
 
-    async def get_me(self) -> dict[str, Any]:
+    async def get_me(self, **_kwargs: Any) -> dict[str, Any]:
         return {"id": "user-1", "username": "admin"}
 
     get_me._api_meta = {

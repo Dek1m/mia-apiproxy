@@ -1,6 +1,6 @@
 """API Proxy Module — прослойка между CLI и модулями Mia.
 
-Собирает методы из модулей (auth, workspace, llm, system, fs, notification), выполняет авторизацию
+Собирает методы из загруженных модулей с `_provider` и `@task(api=True)`, выполняет авторизацию
 через AuthMiddleware, конвертирует вызовы и возвращает нормализованные ответы.
 
 Использование:
@@ -61,8 +61,7 @@ __all__ = [
 
 MODULE_VERSION = "1.0.0"
 
-# Whitelist модулей по умолчанию. system — опционален: collect skip, если нет провайдера
-_DEFAULT_WHITELIST: list[str] = ["auth", "workspace", "llm", "system", "fs", "notification"]
+_SKIP_COLLECT = frozenset({"rest", "apiproxy"})
 
 
 class ApiProxyModule(ModuleBase):
@@ -72,7 +71,6 @@ class ApiProxyModule(ModuleBase):
     - Сбор метаданных методов из модулей (`@task(api=True)` → `_api_meta`)
     - Авторизация (AuthMiddleware)
     - Конвертация вызовов и нормализация ответов
-    - Whitelist доступных модулей
     """
 
     @property
@@ -134,22 +132,20 @@ class ApiProxyModule(ModuleBase):
         )
 
     def _collect_methods(self, state: Any) -> None:
-        """Собрать методы из модулей, входящих в whitelist."""
+        """Collect: list_all + `_provider` + `@task(api=True)`. Без mapping."""
         registry = self._provider.registry
+        modules = getattr(state, "modules", None)
+        if modules is None or not hasattr(modules, "list_all"):
+            return
 
-        for module_name in self._config.whitelist:
+        for module_name in modules.list_all():
+            if module_name in _SKIP_COLLECT:
+                continue
             try:
-                # Ищем провайдер модуля в DI
-                provider_class = self._resolve_provider_class(module_name)
-                if provider_class is None:
-                    self._log.debug("provider_class_not_found", extra={"module": module_name})
-                    continue
-
-                provider = state.services.resolve(provider_class)
+                module = modules.get(module_name)
+                provider = getattr(module, "_provider", None) if module is not None else None
                 if provider is None:
-                    self._log.debug("provider_instance_not_found", extra={"module": module_name})
                     continue
-
                 count = registry.collect_from_module(provider, module_name)
                 self._log.info(
                     "methods_collected",
@@ -160,44 +156,6 @@ class ApiProxyModule(ModuleBase):
                     "failed_to_collect_methods",
                     extra={"module": module_name, "error": str(e)},
                 )
-
-    def _resolve_provider_class(self, module_name: str) -> type | None:
-        """Разрешить класс провайдера по имени модуля.
-
-        ImportError — ключ не кладём.
-        """
-        mapping: dict[str, type] = {}
-        try:
-            from modules.auth.provider import AuthProvider
-            mapping["auth"] = AuthProvider
-        except ImportError:
-            pass
-        try:
-            from modules.llm.provider import LLMProvider
-            mapping["llm"] = LLMProvider
-        except ImportError:
-            pass
-        try:
-            from modules.workspace.provider import WorkspaceProvider
-            mapping["workspace"] = WorkspaceProvider
-        except ImportError:
-            pass
-        try:
-            from modules.system.provider import SystemProvider
-            mapping["system"] = SystemProvider
-        except ImportError:
-            pass
-        try:
-            from modules.fs.provider import FsProvider
-            mapping["fs"] = FsProvider
-        except ImportError:
-            pass
-        try:
-            from modules.notification.provider import NotificationProvider
-            mapping["notification"] = NotificationProvider
-        except ImportError:
-            pass
-        return mapping.get(module_name)
 
     def on_unload(self) -> None:
         """Очистка ресурсов."""

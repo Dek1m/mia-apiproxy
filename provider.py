@@ -3,7 +3,6 @@
 Предоставляет:
 - call(module_name, method_name, kwargs, token) — вызов метода
 - list_api(module_name) — список методов для CLI/OpenAPI
-- Whitelist модулей
 """
 from __future__ import annotations
 
@@ -12,9 +11,9 @@ from typing import Any
 
 
 from .config import ApiproxyConfig
-from .registry import MethodRegistry, MethodMeta
+from .registry import MethodRegistry
 from .middleware import AuthMiddleware
-from .converter import call_method, ApiError
+from .converter import call_method
 
 
 __all__ = ["ApiProxyProvider"]
@@ -79,29 +78,9 @@ class ApiProxyProvider:
     ) -> dict[str, Any]:
         """Вызвать API-метод модуля.
 
-        Полный цикл:
-        1. Whitelist проверка
-        2. Поиск метода
-        3. Авторизация
-        4. Валидация аргументов
-        5. Вызов
-        6. Нормализация ответа
-
-        Args:
-            module_name: Имя модуля (auth, workspace, llm).
-            method_name: Имя метода.
-            kwargs: Аргументы.
-            token: Access token.
-
-        Returns:
-            {"data": result, "error": None} или {"data": None, "error": {...}}.
+        Источник истины — MethodRegistry (collect с `_provider` + `@task api=True`).
+        Whitelist-константа не отвергает вызов.
         """
-        # Whitelist проверка
-        if module_name not in self._config.whitelist:
-            error = ApiError(403, f"Module '{module_name}' is not in whitelist")
-            return error.to_dict()
-
-        # Делегируем в converter
         return await call_method(
             registry=self._registry,
             middleware=self._middleware,

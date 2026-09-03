@@ -1,4 +1,4 @@
-"""Tests for ApiProxyProvider — call, whitelist, list_api."""
+"""Tests for ApiProxyProvider — call, registry, list_api."""
 from __future__ import annotations
 
 import pytest
@@ -19,7 +19,7 @@ def provider(fake_module, fake_auth_provider) -> ApiProxyProvider:
 
 @pytest.mark.asyncio
 class TestProviderCall:
-    async def test_whitelist_ok(self, provider):
+    async def test_registry_ok(self, provider):
         result = await provider.call(
             "fake", "typed_method",
             {"count": 1, "ratio": 1.0, "flag": False},
@@ -27,11 +27,22 @@ class TestProviderCall:
         assert result["error"] is None
         assert result["data"]["count"] == 1
 
-    async def test_whitelist_reject(self, provider):
+    async def test_unknown_module_is_404_not_whitelist(self, provider):
         result = await provider.call("secret_module", "do_thing", {})
         assert result["error"] is not None
-        assert result["error"]["status_code"] == 403
-        assert "not in whitelist" in result["error"]["message"]
+        assert result["error"]["status_code"] == 404
+        assert "whitelist" not in result["error"]["message"]
+
+    async def test_call_ignores_config_whitelist(self, fake_module, fake_auth_provider):
+        config = ApiproxyConfig(whitelist=["auth"])
+        p = ApiProxyProvider(config=config, auth_provider=fake_auth_provider)
+        p.registry.collect_from_module(fake_module, "fake")
+        result = await p.call(
+            "fake", "typed_method",
+            {"count": 2, "ratio": 0.5, "flag": True},
+        )
+        assert result["error"] is None
+        assert result["data"]["count"] == 2
 
     async def test_method_not_found(self, provider):
         result = await provider.call("fake", "nonexistent", {})
