@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from typing import ClassVar
+
+from modules_system.pref_spec import PrefField
 
 __all__ = ["ApiproxyConfig"]
 
@@ -17,6 +20,15 @@ class ApiproxyConfig:
 
     whitelist: list[str] = field(default_factory=list)
     method_timeout: float = 30.0
+
+    SETTINGS: ClassVar[tuple[PrefField, ...]] = (
+        PrefField(
+            "method_timeout", "Method timeout (sec)",
+            "Таймаут RPC-метода в apiproxy, если модуль не задал свой.",
+            "float", 30.0, "Limits", env="MIA_APIPROXY_METHOD_TIMEOUT",
+            minimum=0.1, maximum=600,
+        ),
+    )
 
     @classmethod
     def from_env(cls) -> ApiproxyConfig:
