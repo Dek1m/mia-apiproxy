@@ -36,6 +36,7 @@ class ApiProxyProvider:
         self._middleware = AuthMiddleware(auth_provider=auth_provider, log=log)
         self._auth_provider = auth_provider
         self._llm_provider: Any | None = None
+        self._term_provider: Any | None = None
         self._state: Any | None = None
         self._log = log
 
@@ -65,6 +66,19 @@ class ApiProxyProvider:
         except Exception:
             return None
         return self._llm_provider
+
+    @property
+    def term_provider(self) -> Any | None:
+        if self._term_provider is not None:
+            return self._term_provider
+        if self._state is None:
+            return None
+        try:
+            from modules.term.provider import TermProvider
+            self._term_provider = self._state.services.resolve(TermProvider)
+        except Exception:
+            return None
+        return self._term_provider
 
     def bind_state(self, state: Any) -> None:
         self._state = state
