@@ -7,6 +7,7 @@ from __future__ import annotations
 import inspect
 from typing import Any
 
+from .middleware import AuthUnavailableError
 from .registry import MethodMeta
 
 __all__ = ["call_method", "ApiError"]
@@ -204,11 +205,16 @@ async def call_method(
     # 2. Авторизация
     try:
         authorized = await middleware.authorize(meta, token=token)
+    except AuthUnavailableError as e:
+        _authz_denied(log, module_name, method_name, "AUTH_UNAVAILABLE")
+        return ApiError(503, str(e), "AUTH_UNAVAILABLE").to_dict()
     except PermissionError as e:
         msg = str(e)
         if "401" in msg:
+            _authz_denied(log, module_name, method_name, "UNAUTHENTICATED")
             error = ApiError(401, msg)
         else:
+            _authz_denied(log, module_name, method_name, "PERMISSION_DENIED")
             error = ApiError(403, msg)
         return error.to_dict()
 
@@ -231,6 +237,7 @@ async def call_method(
         error = ApiError(404, str(e))
         return error.to_dict()
     except PermissionError as e:
+        _authz_denied(log, module_name, method_name, "PERMISSION_DENIED")
         error = ApiError(403, str(e))
         return error.to_dict()
     except Exception as e:
@@ -258,6 +265,15 @@ async def call_method(
 
     # 5. Нормализация ответа
     return {"data": result, "error": None}
+
+
+def _authz_denied(log: Any, module_name: str, method_name: str, code: str) -> None:
+    """WARN на каждый отказ авторизации: кто/куда/почему — без токенов."""
+    if log is not None:
+        log.warning(
+            "authz_denied",
+            extra={"mod": module_name, "method": method_name, "code": code},
+        )
 
 
 def _ctx_user_id(ctx: Any) -> str | None:

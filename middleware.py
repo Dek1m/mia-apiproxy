@@ -4,12 +4,17 @@
 """
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Any
 
 from .registry import MethodMeta
 
-__all__ = ["AuthMiddleware", "AuthorizedCall"]
+__all__ = ["AuthMiddleware", "AuthorizedCall", "AuthUnavailableError"]
+
+
+class AuthUnavailableError(Exception):
+    """auth_provider отсутствует — валидировать токен нечем (fail-closed, 503)."""
 
 # Живой access JWT не нужен: credential проверит provider (cookie / kwargs)
 _COOKIE_CREDENTIAL = frozenset({
@@ -76,11 +81,18 @@ class AuthMiddleware:
         if not token:
             raise PermissionError("Authentication required (401)")
 
-        # Нет auth_provider — пропускаем проверку (dev mode)
+        # Нет auth_provider — fail-closed: токен невалидируем, вызов запрещён.
+        # Обход только для дев-стенда (MIA_DEV_NO_AUTH=1) — ERROR на каждый запрос,
+        # чтобы режим нельзя было забыть включить в проде.
         if self._auth_provider is None:
-            if self._log is not None:
-                self._log.warning("No auth_provider — skipping auth check")
-            return AuthorizedCall(user_ctx=None, meta=meta)
+            if os.environ.get("MIA_DEV_NO_AUTH") == "1":
+                if self._log is not None:
+                    self._log.error(
+                        "dev_no_auth_bypass",
+                        extra={"mod": meta.module, "method": meta.name},
+                    )
+                return AuthorizedCall(user_ctx=None, meta=meta)
+            raise AuthUnavailableError("Auth service unavailable (503)")
 
         # Валидация токена
         user_ctx = await self._auth_provider.validate_token(token)

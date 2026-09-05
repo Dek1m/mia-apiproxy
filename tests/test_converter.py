@@ -315,3 +315,75 @@ class TestCallMethod:
         assert result["error"] is None
         assert result["data"]["items"] == []
         assert result["data"]["next_cursor"] is None
+
+
+class _CaptureLog:
+    def __init__(self) -> None:
+        self.records: list[tuple[str, str, dict]] = []
+
+    def warning(self, message: str, **kwargs) -> None:
+        self.records.append(("warning", message, kwargs.get("extra", {})))
+
+    def error(self, message: str, **kwargs) -> None:
+        self.records.append(("error", message, kwargs.get("extra", {})))
+
+
+def _secret_registry() -> MethodRegistry:
+    async def secret() -> dict[str, str]:
+        return {"ok": "yes"}
+
+    reg = MethodRegistry()
+    reg.register(
+        "llm",
+        "run_pipeline",
+        {
+            "name": "run_pipeline",
+            "description": "",
+            "args": {},
+            "return_type": "dict",
+            "public": False,
+            "required_permission": "llm:chat",
+        },
+        secret,
+    )
+    return reg
+
+
+class TestAuthzDenied:
+    @pytest.mark.asyncio
+    async def test_no_auth_provider_is_503_not_bypass(self, monkeypatch):
+        """Fail-closed: без auth_provider защищённый метод → 503 AUTH_UNAVAILABLE."""
+        monkeypatch.delenv("MIA_DEV_NO_AUTH", raising=False)
+        reg = _secret_registry()
+        mw = AuthMiddleware()
+        log = _CaptureLog()
+        result = await call_method(reg, mw, "llm", "run_pipeline", {}, token="tok", log=log)
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 503
+        assert result["error"]["code"] == "AUTH_UNAVAILABLE"
+        assert ("warning", "authz_denied", {"mod": "llm", "method": "run_pipeline", "code": "AUTH_UNAVAILABLE"}) in log.records
+
+    @pytest.mark.asyncio
+    async def test_no_token_logs_authz_denied_unauthenticated(self):
+        reg = _secret_registry()
+        mw = AuthMiddleware()
+        log = _CaptureLog()
+        result = await call_method(reg, mw, "llm", "run_pipeline", {}, token=None, log=log)
+        assert result["error"] is not None
+        assert result["error"]["status_code"] == 401
+        assert ("warning", "authz_denied", {"mod": "llm", "method": "run_pipeline", "code": "UNAUTHENTICATED"}) in log.records
+
+    @pytest.mark.asyncio
+    async def test_method_permission_error_logs_authz_denied(self, fake_module):
+        reg = MethodRegistry()
+        reg.collect_from_module(fake_module, "fake")
+        mw = AuthMiddleware()
+        log = _CaptureLog()
+        result = await call_method(
+            reg, mw, "fake", "error_method", {"mode": "permission"}, log=log,
+        )
+        assert result["error"]["status_code"] == 403
+        assert any(
+            message == "authz_denied" and extra.get("code") == "PERMISSION_DENIED"
+            for _, message, extra in log.records
+        )

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from apiproxy.middleware import AuthMiddleware, AuthorizedCall
+from apiproxy.middleware import AuthMiddleware, AuthUnavailableError, AuthorizedCall
 from apiproxy.registry import MethodMeta
 from modules.auth.provider import UserContext
 
@@ -140,8 +140,46 @@ class TestMiddlewareCookieCredential:
 
 @pytest.mark.asyncio
 class TestMiddlewareNoProvider:
-    async def test_no_provider_skips_check(self):
+    async def test_no_provider_fail_closed(self, monkeypatch):
+        """Без auth_provider валидация невозможна → AuthUnavailableError (503)."""
+        monkeypatch.delenv("MIA_DEV_NO_AUTH", raising=False)
         mw = AuthMiddleware(auth_provider=None)
         meta = _make_meta(public=False)
+        with pytest.raises(AuthUnavailableError, match="503"):
+            await mw.authorize(meta, token="any-token")
+
+    async def test_no_provider_no_token_still_401(self, monkeypatch):
+        """Порядок проверок: отсутствие токена — 401 до 503."""
+        monkeypatch.delenv("MIA_DEV_NO_AUTH", raising=False)
+        mw = AuthMiddleware(auth_provider=None)
+        meta = _make_meta(public=False)
+        with pytest.raises(PermissionError, match="401"):
+            await mw.authorize(meta, token=None)
+
+    async def test_dev_no_auth_bypass_with_error_log(self, monkeypatch):
+        """MIA_DEV_NO_AUTH=1 — обход, но ERROR в лог на каждый запрос."""
+        monkeypatch.setenv("MIA_DEV_NO_AUTH", "1")
+
+        class _Log:
+            def __init__(self):
+                self.records = []
+
+            def error(self, message, **kwargs):
+                self.records.append((message, kwargs))
+
+        log = _Log()
+        mw = AuthMiddleware(auth_provider=None, log=log)
+        meta = _make_meta(public=False, module="llm", name="run_pipeline")
         result = await mw.authorize(meta, token="any-token")
+        assert result.user_ctx is None
+        assert log.records == [
+            ("dev_no_auth_bypass", {"extra": {"mod": "llm", "method": "run_pipeline"}}),
+        ]
+
+    async def test_public_method_unaffected_by_missing_provider(self, monkeypatch):
+        """Public-методы проходят без провайдера и без флага."""
+        monkeypatch.delenv("MIA_DEV_NO_AUTH", raising=False)
+        mw = AuthMiddleware(auth_provider=None)
+        meta = _make_meta(public=True)
+        result = await mw.authorize(meta, token=None)
         assert result.user_ctx is None
